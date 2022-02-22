@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Sharing</title>
+<style>
+    body{
+        background-color: black;
+        color: white;
+        padding: 2%;
+        font-family: 'Raleway', sans-serif;
+    }
+    .btn{
+    width: 124px;
+    height: 30px;
+   border-width: 0px;
+   text-align: center;
+   padding: 5px 10px;
+   margin: 5px 2px 2px 2px;
+   background-color:#321633;
+   box-shadow: 2px 3px 2px 1px #7e3347 ;
+   font-size: 14px;
+   color: #e8dee2;
+
+}
+p{
+    font-size: 18px;
+    font-weight: lighter;
+   color: #e8dee2;
+}
+</style>
+</head>
+
+<body>
+    <center>
+        <p>By clicking Accept, you will grant permission to access your screen.</p>
+        <button id="accept" class="btn">Accept</button>
+        <button id="reject" class="btn">Reject</button>
+    </center>
+  
+    <br>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js" crossorigin="anonymous"></script>
+    <script src="./js/connection.js"></script>
+</body>
+
+</html>

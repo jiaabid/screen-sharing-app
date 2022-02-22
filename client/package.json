@@ -1,0 +1,63 @@
+{
+  "name": "screen-sharing-app",
+  "version": "0.1.4",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron .",
+    "start:dev": "nodemon --exec electron .",
+    "dist": "electron-builder",
+    "dist:linux": "electron-builder --linux"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bootstrap": "^4.0.0",
+    "buffer-image-size": "^0.6.4",
+    "electron-prompt": "^1.6.2",
+    "electron-root-path": "^1.0.16",
+    "jquery": "^3.5.1",
+    "mathjs": "^8.1.0",
+    "nodejs-unique-numeric-id-generator": "^1.0.1",
+    "robotjs": "^0.6.0",
+    "screenshot-desktop": "^1.12.3",
+    "socket.io-client": "^3.0.4",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "electron": "^13.1.6",
+    "electron-builder": "^22.11.7",
+    "electron-rebuild": "^2.3.5",
+    "nodemon": "^2.0.12"
+  },
+  "build": {
+    "appId": "com.outcastsolutions.rda",
+    "productName": "Sharp Share",
+    "target": "NSIS",
+    "icon": "./buildResources/icon3.png",
+    "directories": {
+      "output": "dist",
+      "buildResources": "buildResources"
+    },
+    "nsis": {
+      "allowToChangeInstallationDirectory": true,
+      "oneClick": false
+    },
+    "linux": {
+      "target": [
+        "deb",
+        "snap",
+        "rpm"
+      ],
+      "category": "Utility"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.utilities",
+      "entitlements": "build/entitlements.mac.plist"
+    }
+  }
+}

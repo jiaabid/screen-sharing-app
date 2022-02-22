@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"> <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./index.css" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/e26371ab6d.js" crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300&display=swap" rel="stylesheet">
+    <title>Screen Sharing Application</title>
+</head>
+
+<body>
+    <div>
+        <header>
+            <nav>
+                <!-- <img src="./assets/crop sharp share logo final-02.png" width="120px" height="65px" style="margin:2px 0px 1px 10px ;"> -->
+          <center>
+            <h4>Screen Sharing Application</h4>
+          </center>
+            </nav>
+        </header>
+
+
+
+
+<div id="check">
+
+</div>
+
+
+
+
+
+        <main>
+            <div id="main-div">
+                <div id="left-div">
+                   
+                    <div id="inner-div">
+                        <div class="content">
+                            
+                                <label class="text-color">My Address</label><br>
+                                <input type="text" class="inputs" value="myid-123-444-222" id="myID" readonly>
+                                <i class="far fa-copy" style="position: absolute; padding-top: 12px; margin-left: -22px; background-color: #dd8493;" onclick="copyIt()"></i>
+                           
+                            
+                        </div>
+                        <div class="acontent">
+                            <a href="" class="text-color" id="setPass" style="font-weight: 900; margin-top: 20px;">
+                                Set password for <br>unattended access.
+                            </a><br>
+                           
+                        </div>
+                        <div class="content">
+                            <h1 class="text-color">Remote Address</h1>
+                            <p class="text-color mb">Please enter the address of remote screen you would like to
+                                access.</p>
+                                <form>
+                                    <input type="text" id="yourID" class="mb inputs" minlength="10" maxlength="10" placeholder="Enter the remoteID to access"><br>
+                                    <span id="error"></span>
+                                    <button id="shareFile" class="btns text-color">Share Files</button>
+                                    <button id="connect" class="btns text-color" type="submit">Connect</button><br>
+        
+                                </form>
+                           
+                        </div>
+                    </div>
+
+                </div>
+                <div  id="right-div">
+                    <div style="margin: 0px;" id="banner">
+                       
+                        <center> <h5 style="margin-top: 30%;">
+                            No Recent Connection
+                        </h5></center>
+                    </div>
+                    
+
+      
+                    <div id="content" style="display: none;">
+                        <h2 class="text-color">Recent Sessions</h2>
+                        <div id="up-cards" style="display: flex; flex-wrap: wrap;  justify-content:start;">
+    
+                        </div>
+                        <div id="down-cards" style="display: flex; flex-wrap: wrap;  justify-content:start;">
+    
+                        </div>
+
+                        <!-- Dropdown Structure -->
+                       
+                
+                    </div>
+                   
+
+                </div>
+            </div>
+
+       
+    
+    
+        </main>
+    </div>
+    <script>
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    var elems = document.querySelectorAll('.dropdown-trigger');
+    var instances = M.Dropdown.init(elems);
+  });
+    </script>
+    <script src="index.js"></script>
+</body>
+
+</html>
+
