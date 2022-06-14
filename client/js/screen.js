@@ -9,8 +9,6 @@ window.onload = function () {
         console.log(arg)
         room = arg;
 
-     
-
         ipcRenderer.on("screen-data", (e, data) => {
             console.log(data)
             data = JSON.parse(data)
@@ -18,21 +16,17 @@ window.onload = function () {
 
         })
 
-        ipcRenderer.send("hello", {})
-        ipcRenderer.on("hello-reply", (e, arg) => {
+        ipcRenderer.send("screen-packets", {})
+        ipcRenderer.on("screen-packets-reply", (e, arg) => {
             console.log(arg.imgStr)
             $("img").attr("src", "data:image/png;base64," + arg.imgStr);
         })
    
     })
     console.log(room)
-   
-
-
-
-
     let imgElement = document.querySelector("img")
 
+    //user move the mouse on screen
     document.querySelector("img").addEventListener("mousemove", e => {
         var posX = imgElement.offsetLeft
         var posY = imgElement.offsetTop;
@@ -44,7 +38,6 @@ window.onload = function () {
             height: window.innerHeight
             
         }
-
         var obj = { "x": x, "y": y, remoteDimension }
         // socket.emit("mouse-move", JSON.stringify(obj));
         ipcRenderer.send("mouse-move", JSON.stringify(obj));
@@ -79,10 +72,7 @@ window.onload = function () {
         } if(e.key == "Meta"){
               e.key = "command"
         }
- console.log(e)
         var obj = { "key": e.key == "Meta" ? "command":e.key, modifier };
-        console.log(e.key)
-       
         ipcRenderer.send("type", JSON.stringify(obj))
     })
 

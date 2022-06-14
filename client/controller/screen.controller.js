@@ -34,36 +34,21 @@ let accept = 0;
 let remote = 0;
 let roomID = ""
 
-//connecting to server 
-//digital ocean
-var socket = require('socket.io-client')('http://139.59.168.162:80');
+//connecting to nodejs socket server 
+var socket = require('socket.io-client')(process.env.SOCKET_IP);
 
-//localhost
-// var socket = require('socket.io-client')('http://192.168.18.16:5000');
-
-let { workArea } = screen.getPrimaryDisplay()
 let boundHeight = screen.getPrimaryDisplay().bounds.height
 let boundWidth = screen.getPrimaryDisplay().bounds.width
 let { width, height } = screen.getPrimaryDisplay().workAreaSize
 
 try {
 
-socket.on("connect",_=>{
-    if(roomID !== ""){
-        socket.emit("join-message", roomID)
-    }
-})
+    socket.on("connect", _ => {
+        if (roomID !== "") {
+            socket.emit("join-message", roomID)
+        }
+    })
 
-    //reset all flags
-    const endCommunication = () => {
-        socket.emit("join-message", roomID)
-        screenWin = ""
-        status = false
-        clearInterval(interval)
-        remote = 0
-        accept = 0
-
-    }
 
     //save the room
     ipcMain.on("save-roomId", (e, arg) => {
@@ -91,26 +76,14 @@ socket.on("connect",_=>{
     })
 
 
-    //ask to connect to the remote window
-    ipcMain.on("request-to-connect", (e, arg) => {
+    //show the password dialog
+    ipcMain.on("trigger-password", (e, arg) => {
 
-        //holds the orginal screen id and id of connecting screen
-        Creds = JSON.parse(arg)
-        // remote = 1
-        if (Creds.password) {
-            //check the password is same or not
-            socket.emit("check-pass", arg)
-            // socket.emit("proceed-sharing", JSON.stringify(Creds))
-
-        } else {
-
-            //send request for poping window to accept or reject
-            socket.emit("connection-request", JSON.stringify(Creds))
-
-        }
-
-
-
+        let modalWin = new BrowserWindow({
+            width: 500,
+            height: 300
+        })
+        dialog.showMessageBox(modalWin)
     })
 
 
@@ -118,7 +91,7 @@ socket.on("connect",_=>{
     socket.on("check-pass", (data) => {
         data = JSON.parse(data)
 
-        //if not connecte to ther remote
+        //if not connect to the remote
         if (accept == 0 && remote == 0) {
             if (data.password == myPass) {
                 Creds = data
@@ -126,15 +99,7 @@ socket.on("connect",_=>{
                 status = true
                 socket.emit("proceed-sharing", JSON.stringify(data))
             } else {
-                // dialog.showMessageBox({
-                //     title: "warning",
-
-
-                //     message: `Anybody is trying to access with wrong Password`,
-                //     type: "warning"
-                // }).then(res => {
-                //     console.log(res)
-                // })
+                console.log("invalid password");
             }
         }
         //already connected with other user 
@@ -201,6 +166,27 @@ socket.on("connect",_=>{
         }
     })
 
+    
+
+    //ask to connect to the remote window
+    ipcMain.on("request-to-connect", (e, arg) => {
+
+        //holds the orginal screen id and id of connecting screen
+        Creds = JSON.parse(arg)
+        // remote = 1
+        if (Creds.password) {
+            //check the password is same or not
+            socket.emit("check-pass", arg)
+            // socket.emit("proceed-sharing", JSON.stringify(Creds))
+
+        } else {
+
+            //send request for poping window to accept or reject
+            socket.emit("connection-request", JSON.stringify(Creds))
+
+        }
+    })
+
     //as the id get accepted
     //the user accept the request
     ipcMain.on("accept-the-request", (e, arg) => {
@@ -213,9 +199,7 @@ socket.on("connect",_=>{
         ipcMain.on("listen-to-status", (e, arg) => {
             e.reply("status", true)
         })
-
         connectionWin.minimize();
-
     })
 
 
@@ -230,100 +214,6 @@ socket.on("connect",_=>{
         })
     })
 
-
-
-    //take screen shots and send the data to original screen
-    socket.on("ready-for-data", data => {
-        // ipcMain.on("listen-to-status", (e, arg) => {
-        //     e.reply("status", true)
-        // })
-
-        data = JSON.parse(data)
-        data.status = true
-        status = true
-        interval = setInterval(function () {
-            screenshot().then((img) => {
-
-                let dimension = sizeOf(img)
-
-                var imgStr = new Buffer.from(img).toString('base64');
-
-                var obj = {};
-
-                obj.room = data.myID;
-                obj.image = imgStr;
-                obj.dimension = dimension
-
-
-
-                socket.emit("screen-data", JSON.stringify(obj));
-            })
-        }, 500)
-    })
-
-
-    //as the request get acceppted by remote screen tell the original screen to start sending image packets
-    socket.on("proceed-sharing", data => {
-        if (accept == 0 && remote == 0) {
-            screenWin = new BrowserWindow({
-                width: 1920,
-                height: 1080,
-                webPreferences: {
-                    nodeIntegration: true,
-                    contextIsolation: false
-                }
-            })
-
-            //load the the original screen
-            screenWin.loadFile("screen.html")
-            screenWin.removeMenu();
-
-
-            screenWin.on("close", () => {
-                socket.emit("screen", {})
-
-                socket.emit("end-communication", JSON.stringify({ direct: true }))
-                endCommunication()
-                // socket.emit("join-message",roomID)
-
-                //send notification to other screen
-                socket.emit("session-end-notification", Creds.remoteID)
-
-                //show message on same screen
-                dialog.showMessageBox({
-                    title: "Message",
-                    message: `Session Ended Successfully!`,
-                    type: "info"
-                }).then(res => {
-                    console.log(res)
-                })
-            })
-
-
-            // screenWin.webContents.openDevTools()
-            remote = 1;
-            ipcMain.on("uuid", (event, arg) => {
-                console.log(arg)
-                console.log(Creds)
-                event.reply("uuid", Creds.myID)
-
-            })
-            status = JSON.parse(data).status
-            socket.emit("ready-for-data", JSON.stringify(Creds))
-
-        } else {
-            dialog.showMessageBox({
-                title: "Error",
-                message: `${accept} ${remote}`,
-                type: "info"
-            }).then(res => {
-                console.log(res)
-            })
-        }
-
-    })
-
-
     //if no remote id exist then send notification
     socket.on("no-id", (arg) => {
         dialog.showMessageBox({
@@ -333,19 +223,9 @@ socket.on("connect",_=>{
         }).then(res => {
             console.log(res)
         })
-
     })
 
-    //if the session end send the notification
-    socket.on("session-end-notification", data => {
-        dialog.showMessageBox({
-            title: "Message",
-            message: `Session Ended Successfully!`,
-            type: "info"
-        }).then(res => {
-            console.log(res)
-        })
-    })
+
 
 
     //listen to the saving id
@@ -407,17 +287,91 @@ socket.on("connect",_=>{
         }
 
     })
+    //take screen shots and send the data to original screen
+    socket.on("ready-for-data", data => {
+      
+
+        data = JSON.parse(data)
+        data.status = true
+        status = true
+        interval = setInterval(function () {
+            screenshot().then((img) => {
+
+                let dimension = sizeOf(img)
+
+                var imgStr = new Buffer.from(img).toString('base64');
+
+                var obj = {};
+
+                obj.room = data.myID;
+                obj.image = imgStr;
+                obj.dimension = dimension
+                socket.emit("screen-data", JSON.stringify(obj));
+            })
+        }, 500)
+    })
+
+    //as the request get acceppted by remote screen tell the original screen to start sending image packets
+    socket.on("proceed-sharing", data => {
+        if (accept == 0 && remote == 0) {
+            screenWin = new BrowserWindow({
+                width: 1920,
+                height: 1080,
+                webPreferences: {
+                    nodeIntegration: true,
+                    contextIsolation: false
+                }
+            })
+
+            //load the the original screen
+            screenWin.loadFile("screen.html")
+            screenWin.removeMenu();
 
 
+            //if the shared screen closes
+            screenWin.on("close", () => {
+                socket.emit("screen", {})
 
+                socket.emit("end-communication", JSON.stringify({ direct: true }))
+                endCommunication()
+                // socket.emit("join-message",roomID)
+
+                //send notification to other screen
+                socket.emit("session-end-notification", Creds.remoteID)
+
+                //show message on same screen
+                dialog.showMessageBox({
+                    title: "Message",
+                    message: `Session Ended Successfully!`,
+                    type: "info"
+                }).then(res => {
+                    console.log(res)
+                })
+            })
+
+            remote = 1; // remote is busy for others
+            status = JSON.parse(data).status
+            socket.emit("ready-for-data", JSON.stringify(Creds))
+
+        } else {
+            dialog.showMessageBox({
+                title: "Error",
+                message: `${accept} ${remote}`,
+                type: "info"
+            }).then(res => {
+                console.log(res)
+            })
+        }
+
+    })
 
     //listening to the screen packets
-    ipcMain.on("hello", (e, arg) => {
+    ipcMain.on("screen-packets", (e, arg) => {
         socket.on('connected-screen-data', data => {
-            if(data.imgStr){
-                e.reply("hello-reply", data)
-            }else{
-              
+            if (data.imgStr) {
+                e.reply("screen-packets-reply", data)
+            } else {
+
             }
         })
     })
@@ -465,7 +419,7 @@ socket.on("connect",_=>{
 
     //remote screen will send the server event to emit click event to original screen
     ipcMain.on("mouse-click", (e, arg) => {
-        socket.emit("mouse-click", {remoteID:Creds.remoteID, direction:arg.direction, double:arg.double})
+        socket.emit("mouse-click", { remoteID: Creds.remoteID, direction: arg.direction, double: arg.double })
     })
 
     //click the original screen
@@ -475,17 +429,17 @@ socket.on("connect",_=>{
             case 1:
                 direction = "left"
                 break;
-                case 2:
-                    direction = "middle"
-                    break;
-                    case 3:
-                        direction = "right"
-                        break;
+            case 2:
+                direction = "middle"
+                break;
+            case 3:
+                direction = "right"
+                break;
             default:
                 break;
         }
-       
-        robot.mouseClick(direction,data.double);
+
+        robot.mouseClick(direction, data.double);
     })
 
 
@@ -690,17 +644,18 @@ socket.on("connect",_=>{
         })
     })
 
-
-
-    ipcMain.on("trigger-password", (e, arg) => {
-
-        let modalWin = new BrowserWindow({
-            width: 500,
-            height: 300
+    //if the session end send the notification
+    socket.on("session-end-notification", data => {
+        dialog.showMessageBox({
+            title: "Message",
+            message: `Session Ended Successfully!`,
+            type: "info"
+        }).then(res => {
+            console.log(res)
         })
-        dialog.showMessageBox(modalWin)
     })
 
+    //on ipc ends
     ipcMain.on("end-communication", (e, data) => {
         let a = data
         if (typeof Creds !== "string" && a.reject && accept == 1) {
@@ -720,35 +675,68 @@ socket.on("connect",_=>{
 
         }
     })
-    let flag = true
 
 
-    socket.on("end-communication", async data => {
-        if (typeof screenWin !== "string" && remote == 1) {
-            // screenWin.close()
-            await screenWin.close()
-            endCommunication()
-            // endCommunication()
-            // socket.emit("join-message",roomID)
-        }
-        else {
-            endCommunication()
-            // socket.emit("join-message",roomID)
 
-        }
-    })
 
+    //rejecting the request from remote 
     socket.on("reject-request", data => {
         dialog.showMessageBox({
             title: "Message",
-
-
             message: `Remote computer rejects your request!`,
             type: "warning"
         }).then(res => {
             console.log(res)
         })
     })
+
+
+    
+//reset all flags
+const endCommunication = () => {
+    socket.emit("join-message", roomID)
+    screenWin = ""
+    status = false
+    clearInterval(interval)
+    remote = 0
+    accept = 0
+}
+socket.on("connection-lost", data => {
+    screenWin.close()
+})
+
+socket.on("disconnect", _ => {
+
+})
+ipcMain.on("uuid", (event, arg) => {
+    // console.log(arg)
+    // console.log(Creds)
+    event.reply("uuid", Creds.myID)
+
+})
+
+//check is the remote busy or not
+ipcMain.once("check-remote-status", (e, arg) => {
+    socket.emit("check-remote-status", JSON.stringify(arg))
+    socket.on("remote-status", data => {
+        e.reply("remote-status-array", data)
+    })
+
+})
+//when the connection drops
+socket.on("end-communication", async data => {
+    if (typeof screenWin !== "string" && remote == 1) {
+        // screenWin.close()
+        await screenWin.close()
+        endCommunication()
+    }
+    else {
+        endCommunication()
+
+    }
+})
+
+
 } catch (err) {
     dialog.showMessageBox({
         title: "Error",
@@ -761,300 +749,3 @@ socket.on("connect",_=>{
     })
 }
 
-ipcMain.once("check-remote-status",(e,arg)=>{
-    // dialog.showMessageBox({
-    //     title: "Error",
-
-
-    //     message: `${arg}`,
-    //     type: "error"
-    // }).then(res => {
-    //     console.log(res)
-    // })
-    socket.emit("check-remote-status",JSON.stringify(arg))
-    socket.on("remote-status",data=>{
-        e.reply("remote-status-array", data)
-    //      dialog.showMessageBox({
-    //     title: "Error",
-
-
-    //     message: `${data}`,
-    //     type: "error"
-    // }).then(res => {
-    //     console.log(res)
-    // })
-    })
-
-})
-
-socket.on("connection-lost",data=>{
-    screenWin.close()
-})
-
-socket.on("disconnect",_=>{
-
-})
-
-// socket.on("closed-unexpectedly", (data) => {
-//         if(remote == 1 && typeof screenWin !== "string"){
-//             screenWin.close()
-//         }
-// })
-
-// socket.on("close-other-window",(data)=>{
-//     if(typeof connectionWin !== "string"){
-//         connectionWin.close()
-//         endCommunication()
-//     }
-// })
-
-//not in use right now
-// ipcMain.on("start-share", function (event, arg) {
-
-//     var uuid = "test";//uuidv4();
-//     socket.emit("join-message", uuid);
-//     event.reply("uuid", uuid);
-
-//     interval = setInterval(function () {
-//         screenshot().then((img) => {
-//             // console.log(img)
-//             let dimension = sizeOf(img)
-//             // console.log(dimension)
-//             var imgStr = new Buffer.from(img).toString('base64');
-
-//             var obj = {};
-//             obj.room = uuid;
-//             obj.image = imgStr;
-//             obj.dimension = dimension
-
-//             // obj.width = screen.width,
-//             // obj.height = screen.height
-
-//             socket.emit("screen-data", JSON.stringify(obj));
-//         })
-//     }, 500)
-// })
-
-
-  // console.log(cur.x, cur.y, "current")
-    // console.log(x, "x")
-    // console.log(y, "y")
-    // console.log(remoteDimension.width, "b")
-    // console.log(remoteDimension.height, "a")    
-    // console.log(width, "d")
-    // console.log(height, "c")
-    // x = remoteDimension.width < width ? x + (width - remoteDimension.width) : x + (remoteDimension.width - width)
-    // y = remoteDimension.height < height ? y + (height - remoteDimension.height) : y + (remoteDimension.height - height)
-    // x = x * (width / remoteDimension.width)
-    // y = y * (height / remoteDimension.height)
-    //   console.log(remoteDimension.width/cur.x)
-    // x = Math.abs(x*(remoteDimension.width/cur.x))
-    // y = Math.abs(y*(remoteDimension.height/cur.y))
-
-
-
-   // socket.emit("file-saved",JSON.stringify({
-                //     room:data.room
-                // }))
-                // alert("file saved!")
-                // ipcMain.on("listening-to-file-save", (e, arg) => {
-                //     e.reply("file-saved", { filepath: res.filepath })
-                // })
-
-
-                  // console.log(arg)
-    // dialog.showOpenDialog({
-    //     buttonLabel: "transfer",
-    //     properties: ["multiSelections"]
-    // }).then(result => {
-    //     console.log(result)
-    //     if (!result.canceled) {
-    //         result.filePaths.forEach(filepath => {
-    //             // let name = path.extname(filepath)
-    //             socket.emit("file-transfer-request", JSON.stringify({ room: Creds.remoteID, filepath }))
-    //         })
-
-    //     }
-    // })
-
-
-    // console.log(m, "m")
-    // console.log(n,"n")
-    // console.log(diffX,diffY,"difference")
-    // console.log(cur.x,cur.y)
-    // robot.moveMouse(0,0)
-    // robot.moveMouse(m+diffX,n+diffY);
-    // console.log(cur.x,cur.y,"after moving")
-
-    // setTimeout(()=>{
-    //     robot.moveMouse(m,n);
-
-    // },300)
-
-
-      // console.log(data)
-    // data = JSON.parse(data)
-    // interval = setInterval(function () {
-    //     screenshot().then((img) => {
-    //         // console.log(img)
-    //         let dimension = sizeOf(img)
-    //         // console.log(dimension)
-    //         var imgStr = new Buffer.from(img).toString('base64');
-
-    //         var obj = {};
-    //         // obj.room = uuid;
-    //         obj.room = data.remoteID;
-    //         obj.image = imgStr;
-    //         obj.dimension = dimension
-
-    //         // obj.width = screen.width,
-    //         // obj.height = screen.height
-
-    //         socket.emit("screen-data", JSON.stringify(obj));
-    //     })
-    // }, 500)
-
-        //as weget images from original screen : not working
-    // socket.on("connected-screen-data", data => {
-    //     console.log("data")
-    //     e.reply("screen-data", data)
-    // })
-
-    //move the mouse
-    // socket.on("mouse-move", function (data) {
-    //     var obj = JSON.parse(data);
-    //     let x = obj.x;
-    //     let y = obj.y;
-    //     // let currentDimension = robot.getMousePos()
-    //     const { remoteDimension } = obj
-    //     let { width, height } = screen.getPrimaryDisplay().workAreaSize
-    //     // let c = height
-    //     let c = boundHeight
-    //     let d = boundWidth
-    //     let a = remoteDimension.height
-    //     let b = remoteDimension.width
-    //     let m = 0
-    //     let n = 0
-
-    //     let cur = screen.getCursorScreenPoint()
-    //     // console.log(cur.x, cur.y, "current")
-    //     // console.log(x, "x")
-    //     // console.log(y, "y")
-    //     // console.log(remoteDimension.width, "b")
-    //     // console.log(remoteDimension.height, "a")    
-    //     // console.log(width, "d")
-    //     // console.log(height, "c")
-    //     // x = remoteDimension.width < width ? x + (width - remoteDimension.width) : x + (remoteDimension.width - width)
-    //     // y = remoteDimension.height < height ? y + (height - remoteDimension.height) : y + (remoteDimension.height - height)
-    //     // x = x * (width / remoteDimension.width)
-    //     // y = y * (height / remoteDimension.height)
-    //     //   console.log(remoteDimension.width/cur.x)
-    //     // x = Math.abs(x*(remoteDimension.width/cur.x))
-    //     // y = Math.abs(y*(remoteDimension.height/cur.y))
-
-
-    //     // console.log(x,y,"after calculations")
-    //     let X = (x * width) / remoteDimension.width
-    //     let Y = (y * height) / remoteDimension.height
-    //     n = (y * c) / a
-    //     m = (x * d) / b
-    //     let diffX = Math.abs(cur.x - m)
-    //     let diffY = Math.abs(cur.y - n)
-
-    //     // console.log(m, "m")
-    //     // console.log(n,"n")
-    //     // console.log(diffX,diffY,"difference")
-    //     // console.log(cur.x,cur.y)
-    //     // robot.moveMouse(0,0)
-    //     robot.moveMouse(m, n);
-    //     // robot.moveMouse(m+diffX,n+diffY);
-    //     // console.log(cur.x,cur.y,"after moving")
-
-    //     // setTimeout(()=>{
-    //     //     robot.moveMouse(m,n);
-
-    //     // },300)
-    // })
-    // //click the original screen
-    // socket.on("mouse-click", function (data) {
-    //     robot.mouseClick();
-    // })
-
-    // socket.on("type", function (data) {
-    //     var obj = JSON.parse(data);
-    //     let key = obj.key;
-    //     // console.log(key.slice(5).toLowerCase())
-    //     // console.log(key.includes("Arrow"))
-    //     if (key.includes("Arrow")) {
-    //         key = key.slice(5).toLowerCase()
-
-    //     }
-
-    //     console.log(key)
-
-    //     if (obj.modifier && obj.modifier.length > 0) {
-    //         robot.keyTap(key, obj.modifier);
-
-    //     } else {
-    //         robot.keyTap(key.toLowerCase());
-
-    //     }
-
-    // })
-
-
-    // socket.on("scroll", function (data) {
-    //     console.log(data)
-    //     // var obj = JSON.parse(data);
-    //     // var key = obj.key;
-    //     // alert("from electron scroll")
-    //     // console.log(obj)
-    //     workArea.x = data.x
-    //     workArea.y = data.y
-    //     robot.scrollMouse(0, -200);
-    // })
-
-    // //when the mouse is dragged
-    // socket.on("mouse-drag", function (data) {
-    //     var obj = JSON.parse(data);
-    //     var x = obj.x;
-    //     var y = obj.y;
-
-    //     let coordinates = robot.getMousePos()
-    //     robot.dragMouse(coordinates.x, coordinates.y)
-    //     robot.mouseToggle("down")
-    //     robot.dragMouse(x, y);
-    //     robot.mouseToggle("up")
-    // })
-    // // socket.on("down", function (data) {
-    // //     var obj = JSON.parse(data);
-    // //     var key = obj.key;
-
-    // //     robot.keyToggle(key, obj.direction);
-    // // })
-    // //scroll the original screen
-    // / console.log(obj)
-    //join the room 
-    // socket.emit("join-message", Creds.remoteID)
-    // e.reply("joined", JSON.stringify({
-    //     status: true, id: obj.remoteID
-    // }))
-
-    //as it will join the room the screen window will popup
-    // let newWin = new BrowserWindow({
-    //     width: 1920,
-    //     height: 1080,
-    //     webPreferences: {
-    //         nodeIntegration: true,
-    //         contextIsolation: false
-    //     }
-    // })
-
-    // //load the the original screen
-    // newWin.loadFile("screen.html")
-    // ipcMain.on("uuid", (event, arg) => {
-    //     console.log(arg)
-    //     console.log(Creds)
-    //     event.reply("uuid", Creds.remoteID)
-
-    // })

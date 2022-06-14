@@ -1,16 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, screen } = require('electron')
 const { v4: uuidv4 } = require('uuid');
-const screenshot = require('screenshot-desktop');
 const prompt = require("electron-prompt")
-const fs = require("fs")
-const sizeOf = require("buffer-image-size")
-// var socket = require('socket.io-client')('http://45.79.28.137:3000');
-//digital ocean
-var socket = require('socket.io-client')('http://139.59.168.162:80');
-
-//localhost
-// var socket = require('socket.io-client')('http://192.168.18.16:5000');
-
+var socket = require('socket.io-client')(process.env.SOCKET_IP);
 var interval;
 
 
@@ -34,13 +25,12 @@ console.log(scaleFactor)
    
     win.removeMenu();
     win.loadFile('index.html')
-    // win.webContents.openDevTools()
-    // require("./controller/ui.controller")
 
     win.on("close", () => {
         socket.emit("end-communication", JSON.stringify({ hello: "fhwhfwu" }))
         app.quit()
     })
+
     //popup the prompt to set the password
     ipcMain.on("setPassword", (e, arg) => {
         console.log(arg)
@@ -83,14 +73,13 @@ console.log(scaleFactor)
             })
             .catch(console.error);
     })
-
     
-    require("./controller/screen.controller")
-
+    require("./controller/screen.controller") //all the socket and intercommunication
 
 
 }
-app.commandLine.appendSwitch('force-device-scale-factor', 1)
+app.commandLine.appendSwitch('force-device-scale-factor', 1) //set the scale factor default to 100%
+
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
@@ -104,9 +93,6 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
         createWindow()
-        // if(scaleFactor !== 1){
-        //     scaleFactor = 1
-        // }
     }
 })
 
