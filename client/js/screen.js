@@ -5,10 +5,13 @@ window.onload = function () {
   
     let room = ""
     ipcRenderer.send("uuid", {})
+    
+    //get client id
     ipcRenderer.on("uuid", (e, arg) => {
         console.log(arg)
         room = arg;
-
+        
+        //request to get screen data
         ipcRenderer.send("screen-packets", {})
         ipcRenderer.on("screen-packets-reply", (e, arg) => {
             console.log(arg.imgStr)
