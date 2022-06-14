@@ -9,13 +9,6 @@ window.onload = function () {
         console.log(arg)
         room = arg;
 
-        ipcRenderer.on("screen-data", (e, data) => {
-            console.log(data)
-            data = JSON.parse(data)
-            $("img").attr("src", "data:image/png;base64," + data.imgStr);
-
-        })
-
         ipcRenderer.send("screen-packets", {})
         ipcRenderer.on("screen-packets-reply", (e, arg) => {
             console.log(arg.imgStr)
