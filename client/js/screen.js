@@ -1,7 +1,7 @@
 const { ipcRenderer, ipcMain } = require("electron")
 window.onload = function () {
 
-    socket = io.connect('http://localhost:5000');
+    socket = io.connect(process.env.SOCKET_IP);
   
     let room = ""
     ipcRenderer.send("uuid", {})
